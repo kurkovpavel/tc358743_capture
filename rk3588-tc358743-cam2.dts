@@ -1,0 +1,160 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "rockchip,rk3588s-orangepi-5", "rockchip,rk3588";
+
+    fragment@0 {
+        target = <&csi2_dphy1>;
+        __overlay__ {
+            status = "okay";
+            ports {
+                #address-cells = <1>;
+                #size-cells = <0>;
+
+                port@0 {
+                    reg = <0>;
+                    csi_dphy_input: endpoint {
+                        remote-endpoint = <&tc358743_out>;
+                        data-lanes = <1 2 3 4>;
+                    };
+                };
+
+                port@1 {
+                    reg = <1>;
+                    csi_dphy_output: endpoint {
+                        remote-endpoint = <&mipi1_csi2_input>;
+                        data-lanes = <1 2 3 4>;
+                    };
+                };
+                
+            };
+        };
+    };
+
+    fragment@1 {
+        target = <&mipi1_csi2>;
+        __overlay__ {
+            status = "okay";
+            ports {
+                #address-cells = <1>;
+                #size-cells = <0>;
+
+                port@0 {
+                    reg = <0>;
+                    mipi1_csi2_input: endpoint {
+                        remote-endpoint = <&csi_dphy_output>;
+                        data-lanes = <1 2 3 4>;
+                    };
+                };
+
+                port@1 {
+                    reg = <1>;
+                    mipi1_csi2_output: endpoint {
+                        remote-endpoint = <&rkcif_mipi_lvds1_in>;
+                        data-lanes = <1 2 3 4>;
+                    };
+                };
+            };
+        };
+    };
+
+    fragment@2 {
+        target = <&rkcif_mipi_lvds1>;
+        __overlay__ {
+            status = "okay";
+            port {
+                rkcif_mipi_lvds1_in: endpoint {
+                    remote-endpoint = <&mipi1_csi2_output>;
+                    data-lanes = <1 2 3 4>;
+                };
+            };
+        };
+    };
+
+    fragment@3 {
+        target = <&rkcif>;
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@4 {
+        target = <&rkcif_mmu>;
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@5 {
+        target = <&i2c2>;
+        __overlay__ {
+            status = "okay";
+            pinctrl-names = "default";
+			pinctrl-0 = <&i2c2m0_xfer>;            
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            tc358743@f {
+                compatible = "toshiba,tc358743";
+                reg = <0x0f>;
+                status = "okay";
+                clocks = <&clk_cam_27m>;
+                clock-names = "refclk";
+                reset-gpios = <&gpio1 6 0>;
+                // pwdn-gpios = <&gpio3 22 1>;
+                rockchip,camera-module-index = <0>;
+                rockchip,camera-module-facing = "back";
+                rockchip,camera-module-name = "TC358743";
+                rockchip,camera-module-lens-name = "NC";
+
+                port {
+                    #address-cells = <1>;
+                    #size-cells = <0>;
+                    tc358743_out: endpoint@0 {
+                        reg = <0>;
+                        remote-endpoint = <&csi_dphy_input>;
+                        clock-lanes = <0>;
+                        clock-noncontinuous;
+                        link-frequencies = /bits/ 64 <297000000>;
+                        data-lanes = <1 2 3 4>;
+                    };
+                };
+            };
+        };
+    };
+
+
+	fragment@6 {
+		target-path = "/";
+
+		__overlay__ {
+			clk_cam_27m: external-camera-clock-27m {
+				status = "okay";
+				compatible = "fixed-clock";
+				clock-frequency = <27000000>;
+				clock-output-names = "clk_cam_27mhz";
+				#clock-cells = <0>;
+			};
+
+			camera_pwdn_gpio: camera-pwdn-gpio {
+				status = "okay";
+				compatible = "regulator-fixed";
+				regulator-name = "camera_pwdn_gpio";
+				regulator-always-on;
+				regulator-boot-on;
+				enable-active-high;
+			};
+		};
+	};
+
+
+    __fixups__ {
+        csi2_dphy1 = "/fragment@0:target:0";
+        mipi1_csi2 = "/fragment@1:target:0";
+        rkcif_mipi_lvds1 = "/fragment@2:target:0";
+        rkcif = "/fragment@3:target:0";
+        rkcif_mmu = "/fragment@4:target:0";
+        i2c2 = "/fragment@5:target:0";
+    };
+};
